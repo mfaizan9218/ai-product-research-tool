@@ -1,0 +1,3893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Product Research Tool — Frontend AI Product Research Experience</title>
+<meta name="description" content="An AI-powered product analysis interface (simulated AI engine): competitor matrices, review sentiment analysis, and feature roadmap generation, running entirely client-side. Not connected to a real LLM." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22 fill=%22%237c6cff%22/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  /* Colors */
+  --bg-main: hsl(224, 71%, 4%);
+  --bg-panel: hsla(224, 71%, 6%, 0.6);
+  --bg-input: hsla(224, 70%, 10%, 0.8);
+  --bg-sidebar: hsla(224, 71%, 3%, 0.9);
+
+  --border-glow: hsla(250, 95%, 68%, 0.2);
+  --border-muted: hsla(210, 40%, 98%, 0.08);
+  --border-focus: hsl(250, 95%, 68%);
+
+  --color-primary: hsl(250, 95%, 68%);
+  --color-secondary: hsl(270, 95%, 60%);
+  --color-teal: hsl(180, 100%, 40%);
+
+  --text-main: hsl(210, 40%, 98%);
+  --text-muted: hsl(215, 20%, 75%);
+  --text-dim: hsl(215, 12%, 55%);
+
+  --color-success: hsl(145, 80%, 45%);
+  --color-error: hsl(0, 85%, 60%);
+  --color-warning: hsl(40, 95%, 60%);
+
+  --grad-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  --grad-glow: radial-gradient(circle at top left, hsla(250, 95%, 68%, 0.15) 0%, transparent 60%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-main);
+  background-image: var(--grad-glow);
+  background-attachment: fixed;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsla(210, 40%, 98%, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsla(210, 40%, 98%, 0.2);
+}
+
+/* Custom CSS Classes & Helpers */
+
+.glass-panel {
+  background: var(--bg-panel);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid var(--border-muted);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  border-color: var(--border-glow);
+  box-shadow: 0 8px 32px 0 rgba(110, 89, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.neon-glow {
+  box-shadow: 0 0 20px 0 hsla(250, 95%, 68%, 0.2);
+}
+
+.glow-text {
+  text-shadow: 0 0 8px hsla(250, 95%, 68%, 0.5);
+}
+
+/* Skeleton Loading State Animation */
+@keyframes pulse-bg {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.skeleton-loader {
+  background: linear-gradient(90deg, 
+    hsla(210, 40%, 98%, 0.03) 25%, 
+    hsla(210, 40%, 98%, 0.08) 50%, 
+    hsla(210, 40%, 98%, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: pulse-bg 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Status dots */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-dot-key 1.5s infinite;
+}
+
+@keyframes pulse-dot-key {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(110, 89, 255, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(110, 89, 255, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(110, 89, 255, 0);
+  }
+}
+
+.success-dot {
+  background-color: var(--color-success);
+  box-shadow: 0 0 8px var(--color-success);
+}
+
+.error-dot {
+  background-color: var(--color-error);
+  box-shadow: 0 0 8px var(--color-error);
+}
+
+.warning-dot {
+  background-color: var(--color-warning);
+  box-shadow: 0 0 8px var(--color-warning);
+}
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main-content {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.2s ease;
+}
+
+.app-header {
+  height: 70px;
+  border-bottom: 1px solid var(--border-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  background: hsla(224, 71%, 4%, 0.4);
+  backdrop-filter: blur(12px);
+  z-index: 90;
+}
+
+.header-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+}
+
+.breadcrumb-parent {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  color: var(--text-dim);
+}
+
+.breadcrumb-current {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.app-view-container {
+  flex: 1;
+  padding: 24px 8px;
+}
+
+@media (max-width: 768px) {
+  .app-main-content {
+    margin-left: 70px;
+  }
+  .app-header {
+    padding: 0 16px;
+  }
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-primary {
+  background: var(--grad-primary);
+  color: var(--text-main);
+  border: none;
+  box-shadow: 0 4px 14px 0 rgba(110, 89, 255, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px 0 rgba(110, 89, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-secondary {
+  background: hsla(210, 40%, 98%, 0.03);
+  color: var(--text-main);
+  border: 1px solid var(--border-muted);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: hsla(210, 40%, 98%, 0.08);
+  border-color: var(--border-glow);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-destructive {
+  background: hsla(0, 85%, 60%, 0.1);
+  border: 1px solid hsla(0, 85%, 60%, 0.3);
+  color: var(--color-error);
+}
+
+.btn-destructive:hover:not(:disabled) {
+  background: hsla(0, 85%, 60%, 0.2);
+  border-color: var(--color-error);
+  transform: translateY(-1px);
+}
+
+.btn-destructive:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-loading {
+  position: relative;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--text-main);
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+
+.btn-icon {
+  flex-shrink: 0;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Custom style hooks for card structures */
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.card-body {
+  padding: 24px;
+}
+
+.card-footer {
+  padding: 20px 24px;
+  border-top: 1px solid var(--border-muted);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.label-required {
+  color: var(--color-error);
+}
+
+.form-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+}
+
+.form-input::placeholder {
+  color: var(--text-dim);
+}
+
+.form-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(110, 89, 255, 0.25);
+  outline: none;
+}
+
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.form-select option {
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+.input-error {
+  border-color: var(--color-error) !important;
+}
+
+.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(255, 89, 89, 0.25) !important;
+}
+
+.form-error-text {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  font-weight: 500;
+}
+.skeleton-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.skeleton-card-item {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-header {
+  height: 24px;
+  width: 60%;
+  margin-bottom: 8px;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 4px;
+}
+
+/* Table Skeletons */
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.skeleton-header-row {
+  border-bottom: 2px solid var(--border-muted);
+}
+
+.skeleton-cell {
+  height: 16px;
+  flex: 1;
+}
+
+/* Kanban Skeletons */
+.skeleton-kanban {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.skeleton-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeleton-title {
+  height: 28px;
+  width: 80%;
+  border-radius: 8px;
+}
+
+.skeleton-card {
+  height: 120px;
+  border-radius: 12px;
+}
+.app-sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-muted);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 32px 8px;
+  border-bottom: 1px solid var(--border-muted);
+  margin-bottom: 24px;
+}
+
+.brand-logo {
+  color: var(--color-primary);
+  filter: drop-shadow(0 0 8px hsla(250, 95%, 68%, 0.5));
+}
+
+.brand-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #ffffff 0%, var(--text-muted) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.nav-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.nav-item-btn:hover {
+  background: hsla(210, 40%, 98%, 0.04);
+}
+
+.nav-item-btn.active {
+  background: hsla(250, 95%, 68%, 0.1);
+  border-left: 3px solid var(--color-primary);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.nav-item-btn.active .nav-icon {
+  color: var(--color-primary);
+}
+
+.nav-item-btn.active .nav-label {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.nav-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.nav-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.nav-item-btn.locked {
+  opacity: 0.7;
+}
+
+.lock-badge {
+  position: absolute;
+  right: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: hsla(210, 40%, 98%, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-muted);
+}
+
+.sidebar-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--border-muted);
+  display: flex;
+  justify-content: center;
+}
+
+.version-tag {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    width: 70px;
+    padding: 24px 8px;
+  }
+  .brand-name, .nav-label, .lock-badge, .version-tag {
+    display: none;
+  }
+  .sidebar-brand {
+    justify-content: center;
+    padding: 0 0 24px 0;
+  }
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: hsla(224, 71%, 6%, 0.4);
+}
+
+.status-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.status-connected .status-label {
+  color: var(--text-main);
+}
+.competitor-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px;
+}
+
+.competitor-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .competitor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.setup-panel-card {
+  position: sticky;
+  top: 94px;
+}
+
+@media (max-width: 1024px) {
+  .setup-panel-card {
+    position: static;
+  }
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.error-message-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
+.error-message-block svg {
+  flex-shrink: 0;
+}
+
+.analyze-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Results Canvas */
+.results-canvas {
+  width: 100%;
+}
+
+.loading-results-card {
+  padding: 48px 24px;
+}
+
+.loading-state-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+}
+
+.loading-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  animation: pulse-hint 2s infinite;
+}
+
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.empty-results-card {
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.empty-state-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 480px;
+  gap: 16px;
+}
+
+.canvas-icon {
+  color: var(--text-dim);
+}
+
+.empty-state-canvas h3 {
+  font-size: 1.25rem;
+}
+
+.empty-state-canvas p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.results-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Floating Actions Bar */
+.actions-floating-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: hsla(224, 71%, 6%, 0.7);
+}
+
+.results-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-teal);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.results-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-teal);
+  box-shadow: 0 0 6px var(--color-teal);
+}
+
+.actions-button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.result-detail-card {
+  overflow: hidden;
+}
+
+.summary-paragraph {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* Matrix Table Styles */
+.table-scrollable {
+  overflow-x: auto;
+  padding: 0 !important;
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.matrix-table th {
+  padding: 16px 24px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-muted);
+  font-size: 0.85rem;
+  background: hsla(210, 40%, 98%, 0.02);
+}
+
+.matrix-table td {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-muted);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.matrix-table-row:hover {
+  background: hsla(210, 40%, 98%, 0.01);
+}
+
+.matrix-cell-feature {
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.matrix-cell-subject {
+  color: var(--text-muted);
+}
+
+.matrix-cell-competitor {
+  color: var(--text-muted);
+}
+
+.matrix-cell-gap {
+  color: var(--color-teal);
+  font-weight: 500;
+}
+
+/* SWOT Quadrants Grid */
+.swot-grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 600px) {
+  .swot-grid-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.swot-quadrant {
+  padding: 24px;
+}
+
+.swot-quadrant h4 {
+  font-size: 1rem;
+  margin-bottom: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.swot-quadrant ul {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.swot-quadrant li {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.swot-quadrant.s h4 { color: var(--color-success); }
+.swot-quadrant.w h4 { color: var(--color-error); }
+.swot-quadrant.o h4 { color: var(--color-primary); }
+.swot-quadrant.t h4 { color: var(--color-warning); }
+
+.swot-quadrant.s { border-left: 3px solid var(--color-success); }
+.swot-quadrant.w { border-left: 3px solid var(--color-error); }
+.swot-quadrant.o { border-left: 3px solid var(--color-primary); }
+.swot-quadrant.t { border-left: 3px solid var(--color-warning); }
+
+/* Recommendation Section */
+.recommendation-card {
+  border-left: 3px solid var(--color-teal);
+}
+
+.recommendations-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rec-icon {
+  color: var(--color-teal);
+}
+
+.recommendation-text {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dashboard-header {
+  margin-bottom: 36px;
+}
+
+.dashboard-header h1 {
+  font-size: 2.25rem;
+  margin-bottom: 8px;
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dashboard-header .subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 800px;
+}
+
+/* Quick Actions Grid */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.quick-action-card {
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.action-card-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsla(210, 40%, 98%, 0.02);
+  margin-bottom: 20px;
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.05);
+}
+
+.quick-action-card h3 {
+  font-size: 1.15rem;
+  margin-bottom: 10px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.quick-action-card p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  flex-grow: 1;
+  margin-bottom: 24px;
+}
+
+.action-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.launch-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.launch-icon {
+  color: var(--color-primary);
+  transition: transform 0.2s ease;
+}
+
+.quick-action-card:hover .launch-icon {
+  transform: translateX(3px) scale(1.1);
+}
+
+/* History Section */
+.history-section {
+  width: 100%;
+}
+
+.history-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.history-title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-section-icon {
+  color: var(--color-primary);
+}
+
+.history-title-block h2 {
+  font-size: 1.4rem;
+}
+
+.search-bar-wrapper {
+  position: relative;
+  width: 280px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+}
+
+.search-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  border-radius: 20px;
+  padding: 8px 16px 8px 40px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: var(--border-focus);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110, 89, 255, 0.15);
+}
+
+/* Empty State Card */
+.empty-history-card {
+  padding: 48px;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+  gap: 16px;
+}
+
+.empty-icon {
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.empty-state-content h3 {
+  font-size: 1.25rem;
+}
+
+.empty-state-content p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.no-results-text {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px 0;
+  font-size: 0.9rem;
+}
+
+/* History Table Styles */
+.history-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.history-table th {
+  padding: 16px 20px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.history-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-muted);
+  vertical-align: middle;
+}
+
+.history-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.history-table-row:hover {
+  background: hsla(210, 40%, 98%, 0.02);
+}
+
+.cell-project-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.table-item-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-competitor {
+  background: rgba(110, 89, 255, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(110, 89, 255, 0.2);
+}
+
+.badge-review {
+  background: rgba(0, 204, 204, 0.1);
+  color: var(--color-teal);
+  border: 1px solid rgba(0, 204, 204, 0.2);
+}
+
+.badge-feature {
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--color-secondary);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.cell-model code {
+  font-family: monospace;
+  background: hsla(210, 40%, 98%, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cell-date {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.actions-header {
+  text-align: right;
+}
+
+.cell-actions {
+  text-align: right;
+}
+
+.actions-btn-group {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.table-action-btn {
+  background: transparent;
+  border: 1px solid var(--border-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table-action-btn:hover {
+  background: hsla(210, 40%, 98%, 0.05);
+}
+
+.load-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.load-btn:hover svg {
+  color: var(--color-primary);
+}
+
+.delete-btn:hover {
+  border-color: var(--color-error);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.delete-btn:hover svg {
+  color: var(--color-error);
+}
+.feature-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.spec-summary-card {
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Kanban Board Layout */
+.kanban-board-wrapper {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .kanban-board-wrapper {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kanban-column {
+  border-radius: 16px;
+  padding: 16px;
+  background: hsla(224, 71%, 6%, 0.4);
+  border: 1px solid var(--border-muted);
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.kanban-column-header h4 {
+  font-size: 0.95rem;
+  font-family: 'Outfit', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.col-must .kanban-column-header h4 { color: var(--color-error); }
+.col-should .kanban-column-header h4 { color: var(--color-warning); }
+.col-could .kanban-column-header h4 { color: var(--color-teal); }
+
+.column-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: hsla(210, 40%, 98%, 0.05);
+  border: 1px solid var(--border-muted);
+  padding: 2px 8px;
+  border-radius: 20px;
+  color: var(--text-muted);
+}
+
+.kanban-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 200px;
+}
+
+.kanban-card {
+  padding: 16px;
+  background: hsla(210, 40%, 98%, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.kanban-card:hover {
+  background: hsla(210, 40%, 98%, 0.04);
+}
+
+.kanban-card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.kanban-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.kanban-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-muted);
+  padding-top: 10px;
+}
+
+.story-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.story-toggle-btn:hover {
+  background: hsla(250, 95%, 68%, 0.1);
+}
+
+.kanban-card-story-drawer {
+  background: hsla(210, 40%, 98%, 0.03);
+  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-muted);
+  margin-top: 4px;
+  animation: slideDown 0.2s ease;
+}
+
+.story-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.copy-story-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-teal);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.copy-story-btn:hover {
+  background: rgba(0, 204, 204, 0.1);
+}
+
+.copied-icon {
+  color: var(--color-success);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.review-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-muted);
+  padding-bottom: 12px;
+}
+
+.input-mode-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.input-mode-btn.active {
+  background: hsla(210, 40%, 98%, 0.05);
+  color: var(--text-main);
+}
+
+.csv-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.csv-drop-zone {
+  border: 1px dashed var(--border-muted);
+  background: hsla(210, 40%, 98%, 0.02);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.csv-drop-zone:hover {
+  border-color: var(--border-focus);
+  background: hsla(210, 40%, 98%, 0.04);
+}
+
+.upload-icon {
+  color: var(--color-primary);
+}
+
+.csv-drop-zone span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.csv-drop-zone .file-name {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+/* Sentiment Bar Chart */
+.sentiment-bar-chart {
+  display: flex;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: var(--bg-input);
+}
+
+.sentiment-bar-part {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: width 0.3s ease;
+}
+
+.sentiment-bar-part span {
+  color: #ffffff;
+}
+
+.sentiment-bar-part svg {
+  stroke: #ffffff;
+  flex-shrink: 0;
+}
+
+.sentiment-bar-part.pos { background: var(--color-success); }
+.sentiment-bar-part.neu { background: var(--color-warning); }
+.sentiment-bar-part.neg { background: var(--color-error); }
+
+.sentiment-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legend-color.pos { background: var(--color-success); }
+.legend-color.neu { background: var(--color-warning); }
+.legend-color.neg { background: var(--color-error); }
+
+/* Pain Points Accordion */
+.pain-points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pain-point-item {
+  padding: 16px 20px;
+  background: hsla(210, 40%, 98%, 0.01);
+}
+
+.pain-point-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.pain-point-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: hsla(210, 40%, 98%, 0.05);
+  border: 1px solid var(--border-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.pain-point-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  flex-grow: 1;
+}
+
+.impact-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.impact-badge.impact-high {
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--color-error);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.impact-badge.impact-medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.impact-badge.impact-low {
+  background: rgba(110, 89, 255, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(110, 89, 255, 0.2);
+}
+
+.pain-point-solution {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pain-point-solution strong {
+  color: var(--text-main);
+}
+
+/* Feedback split cards */
+.feedback-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .feedback-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.feedback-bullet-list {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedback-bullet-list li {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.highlight-praise-header h4 {
+  color: var(--color-success);
+}
+
+.highlight-features-header h4 {
+  color: var(--color-teal);
+}
+.settings-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.settings-header {
+  margin-bottom: 32px;
+}
+
+.settings-header h1 {
+  font-size: 2.25rem;
+  margin-bottom: 8px;
+  background: var(--grad-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.settings-header .subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 800px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.provider-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-muted);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.provider-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.provider-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.provider-tab-btn.active {
+  color: var(--color-primary);
+}
+
+.provider-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -17px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--grad-primary);
+}
+
+.key-saved-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  background: var(--color-success);
+  border-radius: 50%;
+  box-shadow: 0 0 4px var(--color-success);
+}
+
+.config-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.model-tip {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: -8px;
+}
+
+.model-tip code {
+  color: var(--text-muted);
+  background: hsla(210, 40%, 98%, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.test-result-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-top: 24px;
+}
+
+.test-result-banner.success {
+  background: rgba(21, 128, 61, 0.1);
+  border: 1px solid rgba(21, 128, 61, 0.3);
+}
+
+.test-result-banner.success .result-icon,
+.test-result-banner.success .result-text {
+  color: var(--color-success);
+}
+
+.test-result-banner.error {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.test-result-banner.error .result-icon,
+.test-result-banner.error .result-text {
+  color: var(--color-error);
+}
+
+.result-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.result-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.security-info-block {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: hsla(210, 40%, 98%, 0.02);
+  border: 1px solid var(--border-muted);
+  margin-bottom: 16px;
+}
+
+.security-info-block h4 {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.security-info-block p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.security-info-icon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.security-info-block.warning {
+  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.02);
+}
+
+.security-info-block.warning .security-info-icon {
+  color: var(--color-warning);
+}
+
+.danger-zone {
+  margin-top: 32px;
+  border-top: 1px solid var(--border-muted);
+  padding-top: 24px;
+}
+
+.danger-zone h4 {
+  color: var(--color-error);
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.danger-zone p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.save-toast-message {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-success);
+  margin-top: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Portfolio demo additions --- */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 204, 204, 0.08);
+  border: 1px solid rgba(0, 204, 204, 0.25);
+  color: var(--color-teal);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+.demo-banner svg { flex-shrink: 0; }
+
+.icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+<script>
+// ---- Minimal lucide-style icon set (inline SVG, no external dependency) ----
+const { createElement: h } = React;
+
+function makeIcon(paths) {
+  return function Icon({ size = 20, className = '', style = {}, ...rest }) {
+    return h(
+      'svg',
+      {
+        xmlns: 'http://www.w3.org/2000/svg',
+        width: size,
+        height: size,
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        className: `icon-svg ${className}`,
+        style,
+        ...rest
+      },
+      paths.map((p, i) => h(p.tag || 'path', { key: i, ...p.attrs }))
+    );
+  };
+}
+
+const LayoutDashboard = makeIcon([
+  { attrs: { d: 'M3 3h7v9H3z' } },
+  { attrs: { d: 'M14 3h7v5h-7z' } },
+  { attrs: { d: 'M14 12h7v9h-7z' } },
+  { attrs: { d: 'M3 16h7v5H3z' } }
+]);
+
+const BarChart3 = makeIcon([
+  { attrs: { d: 'M3 3v18h18' } },
+  { attrs: { d: 'M18 17V9' } },
+  { attrs: { d: 'M13 17V5' } },
+  { attrs: { d: 'M8 17v-3' } }
+]);
+
+const MessageSquare = makeIcon([
+  { attrs: { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' } }
+]);
+
+const KanbanSquare = makeIcon([
+  { attrs: { x: 3, y: 3, width: 18, height: 18, rx: 2 }, tag: 'rect' },
+  { attrs: { d: 'M8 7v7' } },
+  { attrs: { d: 'M12 7v4' } },
+  { attrs: { d: 'M16 7v9' } }
+]);
+
+const SettingsIcon = makeIcon([
+  { attrs: { cx: 12, cy: 12, r: 3 }, tag: 'circle' },
+  { attrs: { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z' } }
+]);
+
+const Compass = makeIcon([
+  { attrs: { cx: 12, cy: 12, r: 10 }, tag: 'circle' },
+  { attrs: { points: '16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76' }, tag: 'polygon' }
+]);
+
+const RefreshCw = makeIcon([
+  { attrs: { d: 'M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8' } },
+  { attrs: { d: 'M3 3v5h5' } },
+  { attrs: { d: 'M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16' } },
+  { attrs: { d: 'M16 16h5v5' } }
+]);
+
+const CheckCircle2 = makeIcon([
+  { attrs: { cx: 12, cy: 12, r: 10 }, tag: 'circle' },
+  { attrs: { d: 'm9 12 2 2 4-4' } }
+]);
+
+const AlertTriangle = makeIcon([
+  { attrs: { d: 'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z' } },
+  { attrs: { d: 'M12 9v4' } },
+  { attrs: { d: 'M12 17h.01' } }
+]);
+
+const Trash2 = makeIcon([
+  { attrs: { d: 'M3 6h18' } },
+  { attrs: { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6' } },
+  { attrs: { d: 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' } },
+  { attrs: { d: 'M10 11v6' } },
+  { attrs: { d: 'M14 11v6' } }
+]);
+
+const ShieldAlert = makeIcon([
+  { attrs: { d: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z' } },
+  { attrs: { d: 'M12 8v4' } },
+  { attrs: { d: 'M12 16h.01' } }
+]);
+
+const Search = makeIcon([
+  { attrs: { cx: 11, cy: 11, r: 8 }, tag: 'circle' },
+  { attrs: { d: 'm21 21-4.3-4.3' } }
+]);
+
+const FileText = makeIcon([
+  { attrs: { d: 'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z' } },
+  { attrs: { d: 'M14 2v4a2 2 0 0 0 2 2h4' } },
+  { attrs: { d: 'M10 9H8' } },
+  { attrs: { d: 'M16 13H8' } },
+  { attrs: { d: 'M16 17H8' } }
+]);
+
+const ExternalLink = makeIcon([
+  { attrs: { d: 'M15 3h6v6' } },
+  { attrs: { d: 'M10 14 21 3' } },
+  { attrs: { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' } }
+]);
+
+const Plus = makeIcon([
+  { attrs: { d: 'M5 12h14' } },
+  { attrs: { d: 'M12 5v14' } }
+]);
+
+const History = makeIcon([
+  { attrs: { d: 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8' } },
+  { attrs: { d: 'M3 3v5h5' } },
+  { attrs: { d: 'M12 7v5l4 2' } }
+]);
+
+const Copy = makeIcon([
+  { attrs: { x: 9, y: 9, width: 13, height: 13, rx: 2 }, tag: 'rect' },
+  { attrs: { d: 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' } }
+]);
+
+const Download = makeIcon([
+  { attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' } },
+  { attrs: { d: 'M7 10l5 5 5-5' } },
+  { attrs: { d: 'M12 15V3' } }
+]);
+
+const Save = makeIcon([
+  { attrs: { d: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z' } },
+  { attrs: { d: 'M17 21v-8H7v8' } },
+  { attrs: { d: 'M7 3v5h8' } }
+]);
+
+const ArrowRight = makeIcon([
+  { attrs: { d: 'M5 12h14' } },
+  { attrs: { d: 'm12 5 7 7-7 7' } }
+]);
+
+const TrendingUp = makeIcon([
+  { attrs: { points: '22 7 13.5 15.5 8.5 10.5 2 17' }, tag: 'polyline' },
+  { attrs: { points: '16 7 22 7 22 13' }, tag: 'polyline' }
+]);
+
+const Upload = makeIcon([
+  { attrs: { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' } },
+  { attrs: { d: 'M17 8l-5-5-5 5' } },
+  { attrs: { d: 'M12 3v12' } }
+]);
+
+const Smile = makeIcon([
+  { attrs: { cx: 12, cy: 12, r: 10 }, tag: 'circle' },
+  { attrs: { d: 'M8 14s1.5 2 4 2 4-2 4-2' } },
+  { attrs: { d: 'M9 9h.01' } },
+  { attrs: { d: 'M15 9h.01' } }
+]);
+
+const Meh = makeIcon([
+  { attrs: { cx: 12, cy: 12, r: 10 }, tag: 'circle' },
+  { attrs: { d: 'M8 15h8' } },
+  { attrs: { d: 'M9 9h.01' } },
+  { attrs: { d: 'M15 9h.01' } }
+]);
+
+const Frown = makeIcon([
+  { attrs: { cx: 12, cy: 12, r: 10 }, tag: 'circle' },
+  { attrs: { d: 'M16 16s-1.5-2-4-2-4 2-4 2' } },
+  { attrs: { d: 'M9 9h.01' } },
+  { attrs: { d: 'M15 9h.01' } }
+]);
+
+const ChevronDown = makeIcon([{ attrs: { d: 'm6 9 6 6 6-6' } }]);
+const ChevronUp = makeIcon([{ attrs: { d: 'm18 15-6-6-6 6' } }]);
+
+const ClipboardCheck = makeIcon([
+  { attrs: { x: 8, y: 2, width: 8, height: 4, rx: 1 }, tag: 'rect' },
+  { attrs: { d: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2' } },
+  { attrs: { d: 'm9 14 2 2 4-4' } }
+]);
+
+const Clipboard = makeIcon([
+  { attrs: { x: 8, y: 2, width: 8, height: 4, rx: 1 }, tag: 'rect' },
+  { attrs: { d: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2' } }
+]);
+
+// ---- Shared components (class names match the original app's CSS) ----
+
+function Button({ children, onClick, type = 'button', variant = 'primary', disabled = false, loading = false, className = '', icon: Icon }) {
+  return h(
+    'button',
+    {
+      type,
+      onClick,
+      disabled: disabled || loading,
+      className: `btn btn-${variant} ${loading ? 'btn-loading' : ''} ${className}`
+    },
+    loading ? h('span', { className: 'btn-spinner' }) : Icon ? h(Icon, { className: 'btn-icon', size: 16 }) : null,
+    h('span', { className: 'btn-text' }, children)
+  );
+}
+
+function Card({ children, className = '', hoverable = true, onClick }) {
+  return h(
+    'div',
+    {
+      className: `glass-panel ${hoverable ? 'glass-panel-hover' : ''} ${className}`,
+      onClick,
+      style: { cursor: onClick ? 'pointer' : 'default' }
+    },
+    children
+  );
+}
+
+function Input({ label, id, type = 'text', placeholder = '', value, onChange, disabled = false, error = '', options = [], rows = 4, className = '', required = false }) {
+  return h(
+    'div',
+    { className: `form-group ${className}` },
+    label && h('label', { htmlFor: id, className: 'form-label' }, label, ' ', required && h('span', { className: 'label-required' }, '*')),
+    type === 'textarea'
+      ? h('textarea', {
+          id,
+          rows,
+          placeholder,
+          value,
+          onChange,
+          disabled,
+          className: `form-input form-textarea ${error ? 'input-error' : ''}`,
+          required
+        })
+      : type === 'select'
+      ? h(
+          'select',
+          {
+            id,
+            value,
+            onChange,
+            disabled,
+            className: `form-input form-select ${error ? 'input-error' : ''}`,
+            required
+          },
+          options.map((opt) => h('option', { key: opt.value, value: opt.value }, opt.label))
+        )
+      : h('input', {
+          id,
+          type,
+          placeholder,
+          value,
+          onChange,
+          disabled,
+          className: `form-input ${error ? 'input-error' : ''}`,
+          required
+        }),
+    error && h('span', { className: 'form-error-text' }, error)
+  );
+}
+
+function Loader({ type = 'card', count = 1 }) {
+  const items = Array.from({ length: count });
+
+  if (type === 'table') {
+    return h(
+      'div',
+      { className: 'skeleton-table' },
+      h(
+        'div',
+        { className: 'skeleton-row skeleton-header-row' },
+        h('div', { className: 'skeleton-cell skeleton-loader' }),
+        h('div', { className: 'skeleton-cell skeleton-loader' }),
+        h('div', { className: 'skeleton-cell skeleton-loader' }),
+        h('div', { className: 'skeleton-cell skeleton-loader' })
+      ),
+      items.map((_, idx) =>
+        h(
+          'div',
+          { key: idx, className: 'skeleton-row' },
+          h('div', { className: 'skeleton-cell skeleton-loader', style: { width: '40%' } }),
+          h('div', { className: 'skeleton-cell skeleton-loader', style: { width: '20%' } }),
+          h('div', { className: 'skeleton-cell skeleton-loader', style: { width: '20%' } }),
+          h('div', { className: 'skeleton-cell skeleton-loader', style: { width: '10%' } })
+        )
+      )
+    );
+  }
+
+  if (type === 'kanban') {
+    return h(
+      'div',
+      { className: 'skeleton-kanban' },
+      Array.from({ length: 3 }).map((_, colIdx) =>
+        h(
+          'div',
+          { key: colIdx, className: 'skeleton-column' },
+          h('div', { className: 'skeleton-title skeleton-loader' }),
+          items.map((_, idx) => h('div', { key: idx, className: 'skeleton-card skeleton-loader' }))
+        )
+      )
+    );
+  }
+
+  return h(
+    'div',
+    { className: 'skeleton-cards-container' },
+    items.map((_, idx) =>
+      h(
+        'div',
+        { key: idx, className: 'skeleton-card-item glass-panel' },
+        h('div', { className: 'skeleton-header skeleton-loader' }),
+        h('div', { className: 'skeleton-line skeleton-loader', style: { width: '90%' } }),
+        h('div', { className: 'skeleton-line skeleton-loader', style: { width: '75%' } }),
+        h('div', { className: 'skeleton-line skeleton-loader', style: { width: '50%' } })
+      )
+    )
+  );
+}
+
+function StatusIndicator({ provider, model, isConnected }) {
+  const getProviderLabel = (p) => {
+    switch (p) {
+      case 'gemini':
+        return 'Gemini';
+      case 'openai':
+        return 'OpenAI';
+      case 'anthropic':
+        return 'Anthropic';
+      case 'openrouter':
+        return 'OpenRouter';
+      default:
+        return 'No Active Provider';
+    }
+  };
+
+  return h(
+    'div',
+    { className: `status-pill glass-panel ${isConnected ? 'status-connected' : 'status-disconnected'}` },
+    h('span', { className: `pulse-dot ${isConnected ? 'success-dot' : 'error-dot'}` }),
+    h('span', { className: 'status-label' }, isConnected ? `${getProviderLabel(provider)} (${model}) · Demo` : 'Offline')
+  );
+}
+
+function Navigation() {
+  const { currentView, setCurrentView, isConnected } = React.useContext(AppContext);
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, requiresKey: true },
+    { id: 'competitor', label: 'Competitor Matrix', icon: BarChart3, requiresKey: true },
+    { id: 'review', label: 'Review Analyzer', icon: MessageSquare, requiresKey: true },
+    { id: 'feature', label: 'Feature Canvas', icon: KanbanSquare, requiresKey: true },
+    { id: 'settings', label: 'BYOAI Settings', icon: SettingsIcon, requiresKey: false }
+  ];
+
+  const handleNavClick = (id, requiresKey) => {
+    if (requiresKey && !isConnected) {
+      alert('Please configure and save an active API key in Settings first.');
+      setCurrentView('settings');
+      return;
+    }
+    setCurrentView(id);
+  };
+
+  return h(
+    'aside',
+    { className: 'app-sidebar' },
+    h(
+      'div',
+      { className: 'sidebar-brand' },
+      h(Compass, { className: 'brand-logo', size: 24 }),
+      h('span', { className: 'brand-name' }, 'Synthesize')
+    ),
+    h(
+      'nav',
+      { className: 'sidebar-nav' },
+      navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentView === item.id;
+        const isLocked = item.requiresKey && !isConnected;
+        return h(
+          'button',
+          {
+            key: item.id,
+            onClick: () => handleNavClick(item.id, item.requiresKey),
+            className: `nav-item-btn ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`
+          },
+          h(Icon, { size: 18, className: 'nav-icon' }),
+          h('span', { className: 'nav-label' }, item.label),
+          isLocked && h('span', { className: 'lock-badge' }, 'Key Req.')
+        );
+      })
+    ),
+    h('div', { className: 'sidebar-footer' }, h('span', { className: 'version-tag' }, 'Demo v1.0.0'))
+  );
+}
+
+// ---- Simulated "AI" layer ----
+// This portfolio demo runs entirely client-side. Instead of calling a real
+// LLM provider, these functions generate realistic, input-aware mock
+// responses that match the exact JSON schemas the original app expects,
+// after a short simulated "thinking" delay.
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pick(arr, n) {
+  return arr.slice(0, n);
+}
+
+function firstCompetitor(competitorsStr) {
+  const parts = competitorsStr.split(',').map((s) => s.trim()).filter(Boolean);
+  return parts[0] || 'the leading competitor';
+}
+
+async function simulateCompetitorAnalysis(subjectProduct, competitors, focusArea) {
+  await wait(1400 + Math.random() * 900);
+
+  const rival = firstCompetitor(competitors);
+
+  return {
+    summary: `${subjectProduct} enters a landscape shaped by ${competitors}, where ${focusArea.toLowerCase()} is the primary battleground. Incumbents lean on brand trust and integration depth, leaving room for ${subjectProduct} to differentiate through a sharper onboarding experience and more transparent pricing.`,
+    comparisonGrid: [
+      {
+        featureName: 'Onboarding Experience',
+        subjectStatus: 'Guided setup with contextual tips and a working demo in under 5 minutes.',
+        competitorStatus: `${rival} requires a sales call before granting full access.`,
+        gapStatus: 'Opportunity to win self-serve, time-pressed evaluators.'
+      },
+      {
+        featureName: 'Pricing Transparency',
+        subjectStatus: 'Public pricing tiers with a usable free plan.',
+        competitorStatus: 'Pricing hidden behind a "contact us" form.',
+        gapStatus: 'Clear trust advantage for budget-conscious teams.'
+      },
+      {
+        featureName: focusArea,
+        subjectStatus: 'Modern, focused implementation aimed at a specific workflow.',
+        competitorStatus: 'Broader but shallower coverage across many use cases.',
+        gapStatus: 'Room to out-execute on depth rather than breadth.'
+      },
+      {
+        featureName: 'Integrations',
+        subjectStatus: 'A handful of high-leverage integrations, expanding steadily.',
+        competitorStatus: `${rival} offers a large but uneven integration marketplace.`,
+        gapStatus: 'Prioritize the 3-4 integrations that matter most to target users.'
+      },
+      {
+        featureName: 'Customer Support',
+        subjectStatus: 'Responsive in-app chat with documented response-time targets.',
+        competitorStatus: 'Ticket-based support with multi-day response times reported by users.',
+        gapStatus: 'Speed of support can become a headline differentiator.'
+      }
+    ],
+    swot: {
+      strengths: [
+        `${subjectProduct} ships a focused feature set rather than a sprawling one.`,
+        'Faster time-to-value for new users.',
+        'Transparent, predictable pricing.'
+      ],
+      weaknesses: [
+        'Smaller integration ecosystem than established players.',
+        'Lower brand recognition in the category.',
+        'Limited enterprise-grade compliance certifications so far.'
+      ],
+      opportunities: [
+        `Capture users frustrated with ${rival}'s sales-gated access.`,
+        'Build a content/SEO moat around the specific workflow you serve best.',
+        'Partner with adjacent tools to close integration gaps quickly.'
+      ],
+      threats: [
+        'Incumbents could copy the self-serve onboarding model.',
+        'Category consolidation could bundle this feature into larger suites for free.',
+        'Well-funded competitors can outspend on paid acquisition.'
+      ]
+    },
+    usp: `Position ${subjectProduct} as the fastest path from "I have a problem" to "it's solved" in the ${focusArea.toLowerCase()} space — no sales calls, no hidden pricing, and a workflow built for one job instead of a hundred.`
+  };
+}
+
+async function simulateReviewAnalysis(reviewsText) {
+  await wait(1300 + Math.random() * 900);
+
+  const lineCount = reviewsText.split(/\n|---/).map((l) => l.trim()).filter(Boolean).length || 1;
+  const positive = Math.min(78, 48 + Math.round(lineCount % 10));
+  const negative = Math.max(8, 22 - Math.round(lineCount % 7));
+  const neutral = Math.max(0, 100 - positive - negative);
+
+  return {
+    sentiment: { positive, neutral, negative },
+    painPoints: [
+      {
+        rank: 1,
+        issue: 'Users report a steep learning curve during their first session.',
+        impact: 'High',
+        action: 'Add an interactive walkthrough that activates on first login.'
+      },
+      {
+        rank: 2,
+        issue: 'Mobile experience feels like an afterthought compared to desktop.',
+        impact: 'Medium',
+        action: 'Prioritize a responsive pass on the three most-used screens.'
+      },
+      {
+        rank: 3,
+        issue: 'Notification settings are hard to find and overly noisy by default.',
+        impact: 'Medium',
+        action: 'Ship sane notification defaults and a one-click "mute all" option.'
+      },
+      {
+        rank: 4,
+        issue: 'Occasional confusion around what the free vs. paid tier includes.',
+        impact: 'Low',
+        action: 'Add an always-visible plan comparison inside account settings.'
+      }
+    ],
+    positivePraise: [
+      'Customers consistently highlight how much time the tool saves them weekly.',
+      'The interface is frequently described as "clean" and "uncluttered".',
+      'Several reviewers mention responsive, helpful customer support.'
+    ],
+    suggestedFeatures: [
+      'Dark mode requested across multiple reviews.',
+      'Deeper export options (CSV/PDF) for reports.',
+      'A public API for connecting to internal tools.'
+    ]
+  };
+}
+
+async function simulateFeatureRoadmap(concept, targetPersona) {
+  await wait(1500 + Math.random() * 1000);
+
+  const short = concept.length > 60 ? concept.slice(0, 60) + '…' : concept;
+
+  return {
+    roadmapSummary: `To serve ${targetPersona}, the roadmap prioritizes a lean, trustworthy core experience first (must-haves), layers in retention and workflow depth next (should-haves), and saves delight and expansion features (could-haves) for once the core loop is proven for "${short}".`,
+    moscow: {
+      mustHave: [
+        {
+          id: 'must-1',
+          title: 'Core workflow setup',
+          description: 'The minimum guided flow that lets a new user reach their first "aha" moment.',
+          userStory: `As a ${targetPersona}, I want to get set up in minutes so that I can see value before I lose interest.`
+        },
+        {
+          id: 'must-2',
+          title: 'Secure account & data handling',
+          description: 'Authentication, basic permissions, and safe storage of user data.',
+          userStory: `As a ${targetPersona}, I want my data handled securely so that I can trust the product with my work.`
+        },
+        {
+          id: 'must-3',
+          title: 'Core action & save/export',
+          description: 'The single primary action the product exists to perform, plus a way to keep the output.',
+          userStory: `As a ${targetPersona}, I want to complete the core task and save the result so that the work isn't lost.`
+        }
+      ],
+      shouldHave: [
+        {
+          id: 'should-1',
+          title: 'History & revisit past work',
+          description: 'A place to find and reopen previous sessions or outputs.',
+          userStory: `As a ${targetPersona}, I want to revisit past work so that I don't have to start from scratch each time.`
+        },
+        {
+          id: 'should-2',
+          title: 'Collaboration basics',
+          description: 'Share a result or workspace with a teammate.',
+          userStory: `As a ${targetPersona}, I want to share results with teammates so that we can work from the same source of truth.`
+        }
+      ],
+      couldHave: [
+        {
+          id: 'could-1',
+          title: 'Custom themes & personalization',
+          description: 'Let power users tailor the look and feel of their workspace.',
+          userStory: `As a ${targetPersona}, I want to personalize my workspace so that it feels tailored to how I work.`
+        },
+        {
+          id: 'could-2',
+          title: 'Public API access',
+          description: 'Expose core functionality for advanced users to automate.',
+          userStory: `As a ${targetPersona}, I want API access so that I can integrate this into my own tools.`
+        }
+      ]
+    }
+  };
+}
+
+// Simulated connection validation used by the Settings screen.
+async function simulateValidateConnection() {
+  await wait(700 + Math.random() * 500);
+  return true;
+}
+
+// ---- App context (demo mode: seeded so the app is "connected" out of the box) ----
+const AppContext = React.createContext();
+
+const DEFAULT_MODELS = {
+  gemini: 'gemini-1.5-flash',
+  openai: 'gpt-4o-mini',
+  anthropic: 'claude-3-5-sonnet-20241022',
+  openrouter: 'google/gemini-2.0-flash-exp:free'
+};
+
+const DEMO_KEY_VALUE = 'demo-mode-simulated-key';
+
+function AppProvider({ children }) {
+  const [currentView, setCurrentView] = React.useState('dashboard');
+  const [activeProvider, setActiveProviderState] = React.useState('gemini');
+  const [activeModel, setActiveModel] = React.useState(DEFAULT_MODELS.gemini);
+
+  const [apiKeys, setApiKeys] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('ai_research_keys_demo');
+      return stored ? JSON.parse(stored) : { gemini: DEMO_KEY_VALUE, openai: '', anthropic: '', openrouter: '' };
+    } catch {
+      return { gemini: DEMO_KEY_VALUE, openai: '', anthropic: '', openrouter: '' };
+    }
+  });
+
+  const [history, setHistory] = React.useState(() => {
+    try {
+      const stored = localStorage.getItem('ai_research_history_demo');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const handleProviderChange = (provider) => {
+    setActiveProviderState(provider);
+    setActiveModel(DEFAULT_MODELS[provider] || '');
+  };
+
+  const saveApiKeys = (newKeys) => {
+    setApiKeys(newKeys);
+    try {
+      localStorage.setItem('ai_research_keys_demo', JSON.stringify(newKeys));
+    } catch {}
+  };
+
+  const addHistoryItem = (item) => {
+    const updated = [
+      {
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
+        timestamp: new Date().toISOString(),
+        provider: activeProvider,
+        model: activeModel,
+        ...item
+      },
+      ...history
+    ];
+    setHistory(updated);
+    try {
+      localStorage.setItem('ai_research_history_demo', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const deleteHistoryItem = (id) => {
+    const updated = history.filter((item) => item.id !== id);
+    setHistory(updated);
+    try {
+      localStorage.setItem('ai_research_history_demo', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const [loadedHistoryItem, setLoadedHistoryItem] = React.useState(null);
+
+  const clearAllData = () => {
+    setApiKeys({ gemini: '', openai: '', anthropic: '', openrouter: '' });
+    setHistory([]);
+    setLoadedHistoryItem(null);
+    setActiveProviderState('gemini');
+    setActiveModel(DEFAULT_MODELS.gemini);
+    try {
+      localStorage.removeItem('ai_research_keys_demo');
+      localStorage.removeItem('ai_research_history_demo');
+    } catch {}
+    setCurrentView('settings');
+  };
+
+  const isConnected = !!apiKeys[activeProvider];
+
+  return h(
+    AppContext.Provider,
+    {
+      value: {
+        currentView,
+        setCurrentView,
+        activeProvider,
+        setActiveProvider: handleProviderChange,
+        activeModel,
+        setActiveModel,
+        apiKeys,
+        saveApiKeys,
+        history,
+        addHistoryItem,
+        deleteHistoryItem,
+        clearAllData,
+        isConnected,
+        defaultModels: DEFAULT_MODELS,
+        loadedHistoryItem,
+        setLoadedHistoryItem
+      }
+    },
+    children
+  );
+}
+
+// ---- Settings view ----
+function SettingsView() {
+  const { apiKeys, saveApiKeys, activeProvider, setActiveProvider, activeModel, setActiveModel, clearAllData, defaultModels } = React.useContext(AppContext);
+
+  const [localKeys, setLocalKeys] = React.useState({ ...apiKeys });
+  const [testing, setTesting] = React.useState(false);
+  const [testResult, setTestResult] = React.useState({ show: false, success: false, message: '' });
+  const [savedMessage, setSavedMessage] = React.useState(false);
+
+  const handleKeyChange = (provider, value) => {
+    setLocalKeys((prev) => ({ ...prev, [provider]: value }));
+    setTestResult({ show: false, success: false, message: '' });
+  };
+
+  const handleProviderSelect = (provider) => {
+    setActiveProvider(provider);
+    setTestResult({ show: false, success: false, message: '' });
+  };
+
+  const handleValidate = async () => {
+    const keyToTest = localKeys[activeProvider];
+    if (!keyToTest) {
+      setTestResult({ show: true, success: false, message: 'Please enter a value first (any text works in this demo).' });
+      return;
+    }
+    setTesting(true);
+    setTestResult({ show: false, success: false, message: '' });
+    await simulateValidateConnection();
+    setTestResult({ show: true, success: true, message: 'Connection validated successfully! (Simulated — no real API call was made.)' });
+    setTesting(false);
+  };
+
+  const handleSave = () => {
+    saveApiKeys(localKeys);
+    setSavedMessage(true);
+    setTimeout(() => setSavedMessage(false), 3000);
+  };
+
+  return h(
+    'div',
+    { className: 'settings-container' },
+    h(
+      'div',
+      { className: 'settings-header' },
+      h('h1', { className: 'glow-text' }, 'BYOAI Settings'),
+      h(
+        'p',
+        { className: 'subtitle' },
+        "This is a portfolio demo: it runs entirely in your browser and simulates AI responses locally — no real API keys, network calls, or backend are involved. The fields below are fully interactive, just like the original app."
+      )
+    ),
+    h(
+      'div',
+      { className: 'settings-grid' },
+      h(
+        Card,
+        { className: 'settings-card', hoverable: false },
+        h('div', { className: 'card-header' }, h('h3', null, 'API Keys & Configuration')),
+        h(
+          'div',
+          { className: 'card-body' },
+          h(
+            'div',
+            { className: 'provider-tabs' },
+            ['gemini', 'openai', 'anthropic', 'openrouter'].map((prov) =>
+              h(
+                'button',
+                {
+                  key: prov,
+                  className: `provider-tab-btn ${activeProvider === prov ? 'active' : ''}`,
+                  onClick: () => handleProviderSelect(prov)
+                },
+                prov.charAt(0).toUpperCase() + prov.slice(1),
+                localKeys[prov] && h('span', { className: 'key-saved-dot' })
+              )
+            )
+          ),
+          h(
+            'div',
+            { className: 'config-fields' },
+            h(Input, {
+              label: `${activeProvider.toUpperCase()} API Key`,
+              id: 'api-key',
+              type: 'password',
+              placeholder: `Enter any placeholder text — no real ${activeProvider} key needed`,
+              value: localKeys[activeProvider],
+              onChange: (e) => handleKeyChange(activeProvider, e.target.value)
+            }),
+            h(Input, {
+              label: 'Active Model',
+              id: 'active-model',
+              type: 'text',
+              placeholder: 'Model name (e.g. gpt-4o-mini)',
+              value: activeModel,
+              onChange: (e) => setActiveModel(e.target.value)
+            }),
+            h('p', { className: 'model-tip' }, `Default for ${activeProvider}: `, h('code', null, defaultModels[activeProvider]))
+          ),
+          testResult.show &&
+            h(
+              'div',
+              { className: `test-result-banner ${testResult.success ? 'success' : 'error'}` },
+              testResult.success ? h(CheckCircle2, { size: 18, className: 'result-icon' }) : h(AlertTriangle, { size: 18, className: 'result-icon' }),
+              h('span', { className: 'result-text' }, testResult.message)
+            )
+        ),
+        h(
+          'div',
+          { className: 'card-footer' },
+          h(Button, { variant: 'secondary', onClick: handleValidate, loading: testing, icon: RefreshCw }, 'Validate Connection'),
+          h(Button, { onClick: handleSave }, 'Save Credentials')
+        ),
+        savedMessage && h('div', { className: 'save-toast-message' }, 'Credentials updated successfully!')
+      ),
+      h(
+        Card,
+        { className: 'security-card', hoverable: false },
+        h('div', { className: 'card-header' }, h('h3', null, 'Security & Local Storage')),
+        h(
+          'div',
+          { className: 'card-body' },
+          h(
+            'div',
+            { className: 'security-info-block' },
+            h(ShieldAlert, { className: 'security-info-icon', size: 32 }),
+            h(
+              'div',
+              null,
+              h('h4', null, 'Local-Only Demo'),
+              h(
+                'p',
+                null,
+                'No data leaves your browser. This demo simulates AI responses locally with realistic mock data instead of calling any external API.'
+              )
+            )
+          ),
+          h(
+            'div',
+            { className: 'security-info-block warning' },
+            h(AlertTriangle, { className: 'security-info-icon', size: 32 }),
+            h(
+              'div',
+              null,
+              h('h4', null, 'Portfolio Demo Notice'),
+              h(
+                'p',
+                null,
+                'In the original application this panel configures real BYOAI credentials. Here, it is preserved for UI fidelity — any text you enter is only used to toggle the "connected" state.'
+              )
+            )
+          ),
+          h(
+            'div',
+            { className: 'danger-zone' },
+            h('h4', null, 'System Reset'),
+            h('p', null, 'Wipe all local storage keys, history, and settings for this demo. This cannot be undone.'),
+            h(
+              Button,
+              {
+                variant: 'destructive',
+                icon: Trash2,
+                onClick: () => {
+                  if (confirm('Are you sure you want to wipe all local demo data? This includes your history and saved keys.')) {
+                    clearAllData();
+                    setLocalKeys({ gemini: '', openai: '', anthropic: '', openrouter: '' });
+                  }
+                }
+              },
+              'Clear All Data'
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+// ---- Dashboard view ----
+function DashboardView() {
+  const { history, deleteHistoryItem, setCurrentView, setLoadedHistoryItem } = React.useContext(AppContext);
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  const quickActions = [
+    {
+      id: 'competitor',
+      title: 'Competitor Matrix',
+      description: 'Benchmark product feature grids and generate a full competitor SWOT matrix.',
+      icon: BarChart3,
+      color: 'var(--color-primary)'
+    },
+    {
+      id: 'review',
+      title: 'Review Analyzer',
+      description: 'Analyze reviews in bulk to extract recurring pain points, praise, and overall sentiment.',
+      icon: MessageSquare,
+      color: 'var(--color-teal)'
+    },
+    {
+      id: 'feature',
+      title: 'Feature Canvas',
+      description: 'Prioritize feature roadmaps using the MoSCoW framework and auto-generate stories.',
+      icon: KanbanSquare,
+      color: 'var(--color-secondary)'
+    }
+  ];
+
+  const filteredHistory = history.filter((item) => item.projectName.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const getAnalysisLabel = (type) => {
+    switch (type) {
+      case 'competitor':
+        return 'Competitor Matrix';
+      case 'review':
+        return 'Review Analysis';
+      case 'feature':
+        return 'Feature Canvas';
+      default:
+        return 'Research';
+    }
+  };
+
+  const getAnalysisIcon = (type) => {
+    switch (type) {
+      case 'competitor':
+        return BarChart3;
+      case 'review':
+        return MessageSquare;
+      case 'feature':
+        return KanbanSquare;
+      default:
+        return FileText;
+    }
+  };
+
+  const handleLoadItem = (item) => {
+    setLoadedHistoryItem(item);
+    setCurrentView(item.type);
+  };
+
+  return h(
+    'div',
+    { className: 'dashboard-container' },
+    h(
+      'div',
+      { className: 'dashboard-header' },
+      h('h1', { className: 'glow-text' }, 'Product Research Center'),
+      h('p', { className: 'subtitle' }, 'Launch new research workspaces or view saved analysis reports from your browser history cache.')
+    ),
+    h(
+      'div',
+      { className: 'quick-actions-grid' },
+      quickActions.map((action) => {
+        const Icon = action.icon;
+        return h(
+          Card,
+          { key: action.id, className: 'quick-action-card', onClick: () => setCurrentView(action.id) },
+          h('div', { className: 'action-card-icon-wrapper', style: { borderColor: action.color } }, h(Icon, { size: 24, style: { color: action.color } })),
+          h('h3', null, action.title),
+          h('p', null, action.description),
+          h('div', { className: 'action-card-footer' }, h('span', { className: 'launch-text' }, 'Launch Workspace'), h(Plus, { size: 16, className: 'launch-icon' }))
+        );
+      })
+    ),
+    h(
+      'div',
+      { className: 'history-section' },
+      h(
+        'div',
+        { className: 'history-header-bar' },
+        h('div', { className: 'history-title-block' }, h(History, { size: 20, className: 'history-section-icon' }), h('h2', null, 'Research History')),
+        history.length > 0 &&
+          h(
+            'div',
+            { className: 'search-bar-wrapper' },
+            h(Search, { size: 16, className: 'search-icon' }),
+            h('input', {
+              type: 'text',
+              placeholder: 'Search projects...',
+              value: searchTerm,
+              onChange: (e) => setSearchTerm(e.target.value),
+              className: 'search-input'
+            })
+          )
+      ),
+      history.length === 0
+        ? h(
+            Card,
+            { className: 'empty-history-card', hoverable: false },
+            h(
+              'div',
+              { className: 'empty-state-content' },
+              h(FileText, { size: 48, className: 'empty-icon' }),
+              h('h3', null, 'No research reports found'),
+              h('p', null, 'Select one of the action cards above to run your first simulated product research project.'),
+              h(Button, { onClick: () => setCurrentView('settings') }, 'Verify Demo Configuration')
+            )
+          )
+        : filteredHistory.length === 0
+        ? h(Card, { className: 'empty-history-card', hoverable: false }, h('p', { className: 'no-results-text' }, `No projects matched your search term "${searchTerm}".`))
+        : h(
+            'div',
+            { className: 'history-table-wrapper glass-panel' },
+            h(
+              'table',
+              { className: 'history-table' },
+              h(
+                'thead',
+                null,
+                h(
+                  'tr',
+                  null,
+                  h('th', null, 'Project Name'),
+                  h('th', null, 'Analysis Type'),
+                  h('th', null, 'Model Used'),
+                  h('th', null, 'Date Created'),
+                  h('th', { className: 'actions-header' }, 'Actions')
+                )
+              ),
+              h(
+                'tbody',
+                null,
+                filteredHistory.map((item) => {
+                  const ItemIcon = getAnalysisIcon(item.type);
+                  return h(
+                    'tr',
+                    { key: item.id, className: 'history-table-row' },
+                    h('td', { className: 'cell-project-name' }, h(ItemIcon, { size: 16, className: 'table-item-icon' }), h('span', null, item.projectName)),
+                    h('td', { className: 'cell-type' }, h('span', { className: `type-badge badge-${item.type}` }, getAnalysisLabel(item.type))),
+                    h('td', { className: 'cell-model' }, h('code', null, item.model)),
+                    h(
+                      'td',
+                      { className: 'cell-date' },
+                      new Date(item.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                    ),
+                    h(
+                      'td',
+                      { className: 'cell-actions' },
+                      h(
+                        'div',
+                        { className: 'actions-btn-group' },
+                        h(
+                          'button',
+                          { className: 'table-action-btn load-btn', title: 'Load Report', onClick: () => handleLoadItem(item) },
+                          h(ExternalLink, { size: 16 })
+                        ),
+                        h(
+                          'button',
+                          { className: 'table-action-btn delete-btn', title: 'Delete Report', onClick: () => deleteHistoryItem(item.id) },
+                          h(Trash2, { size: 16 })
+                        )
+                      )
+                    )
+                  );
+                })
+              )
+            )
+          )
+    )
+  );
+}
+
+// ---- Competitor Matrix view ----
+function CompetitorView() {
+  const { addHistoryItem, loadedHistoryItem, setLoadedHistoryItem } = React.useContext(AppContext);
+
+  const [subjectProduct, setSubjectProduct] = React.useState('');
+  const [competitors, setCompetitors] = React.useState('');
+  const [focusArea, setFocusArea] = React.useState('Core Features');
+
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [result, setResult] = React.useState(null);
+  const [isCopied, setIsCopied] = React.useState(false);
+  const [isSaved, setIsSaved] = React.useState(false);
+
+  React.useEffect(() => {
+    if (loadedHistoryItem && loadedHistoryItem.type === 'competitor') {
+      const { metadata, data } = loadedHistoryItem;
+      if (metadata) {
+        setSubjectProduct(metadata.subjectProduct || '');
+        setCompetitors(metadata.competitors || '');
+        setFocusArea(metadata.focusArea || 'Core Features');
+      } else {
+        setSubjectProduct(loadedHistoryItem.projectName.replace(' Competitor Map', ''));
+      }
+      setResult(data);
+      setIsSaved(true);
+      setLoadedHistoryItem(null);
+    }
+  }, [loadedHistoryItem, setLoadedHistoryItem]);
+
+  const focusOptions = [
+    { value: 'Core Features', label: 'Core Features & Functionality' },
+    { value: 'Pricing & Value Proposition', label: 'Pricing, Tiers & Monetization' },
+    { value: 'User Experience & Branding', label: 'UX, Interface & Visual Design' },
+    { value: 'Technical Spec & Stack Gaps', label: 'Technical Capabilities & Specs' }
+  ];
+
+  const handleRunAnalysis = async (e) => {
+    e.preventDefault();
+    if (!subjectProduct.trim() || !competitors.trim()) {
+      setError('All text fields are required.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setResult(null);
+    setIsSaved(false);
+    try {
+      const parsedData = await simulateCompetitorAnalysis(subjectProduct, competitors, focusArea);
+      setResult(parsedData);
+    } catch (err) {
+      setError(err.message || 'An error occurred during competitive analysis.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyMarkdown = () => {
+    if (!result) return;
+    let md = `# Competitor Matrix: ${subjectProduct} vs ${competitors}\n\n`;
+    md += `**Focus Area:** ${focusArea}\n\n`;
+    md += `## Executive Summary\n${result.summary}\n\n`;
+    md += `## Benchmarking Matrix\n\n`;
+    md += `| Dimension | Subject Product | Competitors | Gap / Opportunity |\n`;
+    md += `| :--- | :--- | :--- | :--- |\n`;
+    result.comparisonGrid.forEach((row) => {
+      md += `| ${row.featureName} | ${row.subjectStatus} | ${row.competitorStatus} | ${row.gapStatus} |\n`;
+    });
+    md += `\n## SWOT Analysis\n\n`;
+    md += `### Strengths\n${result.swot.strengths.map((s) => `- ${s}`).join('\n')}\n\n`;
+    md += `### Weaknesses\n${result.swot.weaknesses.map((w) => `- ${w}`).join('\n')}\n\n`;
+    md += `### Opportunities\n${result.swot.opportunities.map((o) => `- ${o}`).join('\n')}\n\n`;
+    md += `### Threats\n${result.swot.threats.map((t) => `- ${t}`).join('\n')}\n\n`;
+    md += `## Recommendation (USP)\n${result.usp}\n`;
+    navigator.clipboard.writeText(md);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleDownloadJSON = () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `competitor-analysis-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSaveToHistory = () => {
+    if (!result || isSaved) return;
+    addHistoryItem({
+      projectName: `${subjectProduct} Competitor Map`,
+      type: 'competitor',
+      metadata: { subjectProduct, competitors, focusArea },
+      data: result
+    });
+    setIsSaved(true);
+  };
+
+  return h(
+    'div',
+    { className: 'competitor-container' },
+    h(
+      'div',
+      { className: 'competitor-grid' },
+      h(
+        Card,
+        { className: 'setup-panel-card', hoverable: false },
+        h('div', { className: 'card-header' }, h('h3', null, 'Competitor Setup')),
+        h(
+          'form',
+          { onSubmit: handleRunAnalysis, className: 'card-body setup-form' },
+          h(Input, {
+            label: 'Subject Product Name / Core Idea',
+            id: 'subject-product',
+            placeholder: 'e.g. Synthesize AI research tool',
+            value: subjectProduct,
+            onChange: (e) => setSubjectProduct(e.target.value),
+            required: true
+          }),
+          h(Input, {
+            label: 'Competitor Product Name(s)',
+            id: 'competitors-input',
+            placeholder: 'e.g. CompetitorA, CompetitorB (comma separated)',
+            value: competitors,
+            onChange: (e) => setCompetitors(e.target.value),
+            required: true
+          }),
+          h(Input, {
+            label: 'Research Focus Area',
+            id: 'focus-area',
+            type: 'select',
+            options: focusOptions,
+            value: focusArea,
+            onChange: (e) => setFocusArea(e.target.value)
+          }),
+          error && h('div', { className: 'error-message-block' }, h(AlertTriangle, { size: 18 }), h('span', null, error)),
+          h(Button, { type: 'submit', loading, className: 'analyze-btn', icon: ArrowRight }, 'Analyze Competitors')
+        )
+      ),
+      h(
+        'div',
+        { className: 'results-canvas' },
+        loading
+          ? h(
+              Card,
+              { className: 'loading-results-card', hoverable: false },
+              h(
+                'div',
+                { className: 'loading-state-wrapper' },
+                h(Loader, { type: 'table', count: 5 }),
+                h('p', { className: 'loading-hint' }, 'Synthesizing landscape features… please wait.')
+              )
+            )
+          : result
+          ? h(
+              'div',
+              { className: 'results-wrapper' },
+              h(
+                'div',
+                { className: 'actions-floating-bar glass-panel' },
+                h('span', { className: 'results-status' }, 'Analysis Generated'),
+                h(
+                  'div',
+                  { className: 'actions-button-group' },
+                  h(Button, { variant: 'secondary', onClick: handleCopyMarkdown, icon: Copy }, isCopied ? 'Copied MD!' : 'Copy Markdown'),
+                  h(Button, { variant: 'secondary', onClick: handleDownloadJSON, icon: Download }, 'JSON'),
+                  h(Button, { variant: isSaved ? 'secondary' : 'primary', onClick: handleSaveToHistory, disabled: isSaved, icon: Save }, isSaved ? 'Saved to History' : 'Save Report')
+                )
+              ),
+              h(
+                Card,
+                { className: 'result-detail-card', hoverable: false },
+                h('div', { className: 'card-header font-outfit' }, h('h3', null, 'Executive Summary')),
+                h('div', { className: 'card-body' }, h('p', { className: 'summary-paragraph' }, result.summary))
+              ),
+              h(
+                Card,
+                { className: 'result-detail-card', hoverable: false },
+                h('div', { className: 'card-header' }, h('h3', null, 'Feature Benchmarking Matrix')),
+                h(
+                  'div',
+                  { className: 'card-body table-scrollable' },
+                  h(
+                    'table',
+                    { className: 'matrix-table' },
+                    h(
+                      'thead',
+                      null,
+                      h('tr', null, h('th', null, 'Analysis Vector'), h('th', null, 'Your Product'), h('th', null, 'Competitor Landscape'), h('th', null, 'Opportunity Gap'))
+                    ),
+                    h(
+                      'tbody',
+                      null,
+                      result.comparisonGrid.map((row, idx) =>
+                        h(
+                          'tr',
+                          { key: idx, className: 'matrix-table-row' },
+                          h('td', { className: 'matrix-cell-feature' }, row.featureName),
+                          h('td', { className: 'matrix-cell-subject' }, row.subjectStatus),
+                          h('td', { className: 'matrix-cell-competitor' }, row.competitorStatus),
+                          h('td', { className: 'matrix-cell-gap' }, row.gapStatus)
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+              h(
+                'div',
+                { className: 'swot-grid-container' },
+                h(Card, { className: 'swot-quadrant s', hoverable: false }, h('h4', null, 'Strengths (S)'), h('ul', null, result.swot.strengths.map((s, i) => h('li', { key: i }, s)))),
+                h(Card, { className: 'swot-quadrant w', hoverable: false }, h('h4', null, 'Weaknesses (W)'), h('ul', null, result.swot.weaknesses.map((w, i) => h('li', { key: i }, w)))),
+                h(Card, { className: 'swot-quadrant o', hoverable: false }, h('h4', null, 'Opportunities (O)'), h('ul', null, result.swot.opportunities.map((o, i) => h('li', { key: i }, o)))),
+                h(Card, { className: 'swot-quadrant t', hoverable: false }, h('h4', null, 'Threats (T)'), h('ul', null, result.swot.threats.map((t, i) => h('li', { key: i }, t))))
+              ),
+              h(
+                Card,
+                { className: 'result-detail-card recommendation-card', hoverable: false },
+                h('div', { className: 'card-header recommendations-header' }, h(TrendingUp, { size: 20, className: 'rec-icon' }), h('h3', null, 'Recommendation: Positioning & USP')),
+                h('div', { className: 'card-body' }, h('p', { className: 'recommendation-text' }, result.usp))
+              )
+            )
+          : h(
+              Card,
+              { className: 'empty-results-card', hoverable: false },
+              h(
+                'div',
+                { className: 'empty-state-canvas' },
+                h(BarChart3, { size: 48, className: 'canvas-icon' }),
+                h('h3', null, 'Landscape Comparison Sandbox'),
+                h('p', null, 'Provide your product context and competitor names on the left, then click "Analyze" to map out features and SWOT insights.')
+              )
+            )
+      )
+    )
+  );
+}
+
+// ---- Review Analyzer view ----
+function ReviewAnalyzerView() {
+  const { addHistoryItem, loadedHistoryItem, setLoadedHistoryItem } = React.useContext(AppContext);
+
+  const [projectName, setProjectName] = React.useState('');
+  const [reviewsText, setReviewsText] = React.useState('');
+  const [csvFile, setCsvFile] = React.useState(null);
+  const [csvColumns, setCsvColumns] = React.useState([]);
+  const [selectedBodyCol, setSelectedBodyCol] = React.useState('');
+  const [inputMode, setInputMode] = React.useState('text');
+
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [result, setResult] = React.useState(null);
+  const [isCopied, setIsCopied] = React.useState(false);
+  const [isSaved, setIsSaved] = React.useState(false);
+
+  React.useEffect(() => {
+    if (loadedHistoryItem && loadedHistoryItem.type === 'review') {
+      const { metadata, data } = loadedHistoryItem;
+      if (metadata) {
+        setProjectName(metadata.projectName || '');
+        setReviewsText(metadata.reviewsText || '');
+        setInputMode(metadata.inputMode || 'text');
+      } else {
+        setProjectName(loadedHistoryItem.projectName.replace(' Review Summary', ''));
+      }
+      setResult(data);
+      setIsSaved(true);
+      setLoadedHistoryItem(null);
+    }
+  }, [loadedHistoryItem, setLoadedHistoryItem]);
+
+  const handleCsvUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setCsvFile(file);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      const lines = text.split('\n');
+      if (lines.length > 0) {
+        const headers = lines[0].split(',').map((hh) => hh.trim().replace(/^["']|["']$/g, ''));
+        setCsvColumns(headers);
+        setSelectedBodyCol(headers[0] || '');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleRunAnalysis = async (e) => {
+    e.preventDefault();
+    if (!projectName.trim()) {
+      setError('Project Name is required.');
+      return;
+    }
+
+    let rawReviewsContent = '';
+
+    if (inputMode === 'text') {
+      if (!reviewsText.trim()) {
+        setError('Please paste some reviews to analyze.');
+        return;
+      }
+      rawReviewsContent = reviewsText;
+    } else {
+      if (!csvFile) {
+        setError('Please upload a CSV file first.');
+        return;
+      }
+      setLoading(true);
+      setError('');
+      try {
+        const text = await csvFile.text();
+        const lines = text.split('\n');
+        const headers = lines[0].split(',').map((hh) => hh.trim().replace(/^["']|["']$/g, ''));
+        const colIdx = headers.indexOf(selectedBodyCol);
+        if (colIdx === -1) throw new Error('Selected review body column not found in CSV.');
+        const reviews = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+          const cells = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+          const reviewText = cells[colIdx] ? cells[colIdx].trim().replace(/^["']|["']$/g, '') : '';
+          if (reviewText) reviews.push(reviewText);
+        }
+        if (reviews.length === 0) throw new Error('No reviews extracted from selected column.');
+        rawReviewsContent = reviews.slice(0, 40).join('\n---\n');
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setLoading(true);
+    setError('');
+    setResult(null);
+    setIsSaved(false);
+
+    try {
+      const parsedData = await simulateReviewAnalysis(rawReviewsContent);
+      setResult(parsedData);
+    } catch (err) {
+      setError(err.message || 'An error occurred during review analysis.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyMarkdown = () => {
+    if (!result) return;
+    let md = `# Review Sentiment Analysis: ${projectName}\n\n`;
+    md += `## Sentiment Distribution\n`;
+    md += `- Positive: ${result.sentiment.positive}%\n`;
+    md += `- Neutral: ${result.sentiment.neutral}%\n`;
+    md += `- Negative: ${result.sentiment.negative}%\n\n`;
+    md += `## Key Customer Pain Points\n\n`;
+    result.painPoints.forEach((point) => {
+      md += `### ${point.rank}. ${point.issue} (Impact: ${point.impact})\n`;
+      md += `**Actionable Solution:** ${point.action}\n\n`;
+    });
+    md += `## Key Praise Points\n\n`;
+    result.positivePraise.forEach((p) => {
+      md += `- ${p}\n`;
+    });
+    md += `\n## Requested Feature Ideas\n\n`;
+    result.suggestedFeatures.forEach((f) => {
+      md += `- ${f}\n`;
+    });
+    navigator.clipboard.writeText(md);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleDownloadJSON = () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `review-analysis-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSaveToHistory = () => {
+    if (!result || isSaved) return;
+    addHistoryItem({
+      projectName: `${projectName} Review Summary`,
+      type: 'review',
+      metadata: { projectName, reviewsText, inputMode },
+      data: result
+    });
+    setIsSaved(true);
+  };
+
+  return h(
+    'div',
+    { className: 'review-container' },
+    h(
+      'div',
+      { className: 'review-grid' },
+      h(
+        Card,
+        { className: 'setup-panel-card', hoverable: false },
+        h('div', { className: 'card-header' }, h('h3', null, 'Review Input Panel')),
+        h(
+          'form',
+          { onSubmit: handleRunAnalysis, className: 'card-body setup-form' },
+          h(Input, {
+            label: 'Project / Product Name',
+            id: 'project-name',
+            placeholder: 'e.g. Synthesize App Store Feed',
+            value: projectName,
+            onChange: (e) => setProjectName(e.target.value),
+            required: true
+          }),
+          h(
+            'div',
+            { className: 'input-mode-tabs' },
+            h('button', { type: 'button', className: `input-mode-btn ${inputMode === 'text' ? 'active' : ''}`, onClick: () => setInputMode('text') }, 'Paste Reviews'),
+            h('button', { type: 'button', className: `input-mode-btn ${inputMode === 'csv' ? 'active' : ''}`, onClick: () => setInputMode('csv') }, 'CSV Import')
+          ),
+          inputMode === 'text'
+            ? h(Input, {
+                label: 'Paste Customer Feedback (one per line)',
+                id: 'raw-reviews',
+                type: 'textarea',
+                placeholder: 'Paste raw customer feedback reviews here… (Max 40 rows)',
+                value: reviewsText,
+                onChange: (e) => setReviewsText(e.target.value),
+                rows: 8
+              })
+            : h(
+                'div',
+                { className: 'csv-upload-section' },
+                h(
+                  'label',
+                  { className: 'csv-drop-zone' },
+                  h(Upload, { className: 'upload-icon', size: 24 }),
+                  h('span', null, 'Choose CSV File'),
+                  h('span', { className: 'file-name' }, csvFile ? csvFile.name : 'No file selected'),
+                  h('input', { type: 'file', accept: '.csv', onChange: handleCsvUpload, className: 'hidden-file-input' })
+                ),
+                csvColumns.length > 0 &&
+                  h(Input, {
+                    label: 'Select Reviews Content Column',
+                    id: 'body-column-select',
+                    type: 'select',
+                    options: csvColumns.map((col) => ({ value: col, label: col })),
+                    value: selectedBodyCol,
+                    onChange: (e) => setSelectedBodyCol(e.target.value)
+                  })
+              ),
+          error && h('div', { className: 'error-message-block' }, h(AlertTriangle, { size: 18 }), h('span', null, error)),
+          h(Button, { type: 'submit', loading, className: 'analyze-btn', icon: ArrowRight }, 'Analyze Reviews')
+        )
+      ),
+      h(
+        'div',
+        { className: 'results-canvas' },
+        loading
+          ? h(
+              Card,
+              { className: 'loading-results-card', hoverable: false },
+              h('div', { className: 'loading-state-wrapper' }, h(Loader, { type: 'card', count: 3 }), h('p', { className: 'loading-hint' }, 'Mining sentiment patterns and user friction… please wait.'))
+            )
+          : result
+          ? h(
+              'div',
+              { className: 'results-wrapper' },
+              h(
+                'div',
+                { className: 'actions-floating-bar glass-panel' },
+                h('span', { className: 'results-status' }, 'Analysis Generated'),
+                h(
+                  'div',
+                  { className: 'actions-button-group' },
+                  h(Button, { variant: 'secondary', onClick: handleCopyMarkdown, icon: Copy }, isCopied ? 'Copied MD!' : 'Copy Markdown'),
+                  h(Button, { variant: 'secondary', onClick: handleDownloadJSON, icon: Download }, 'JSON'),
+                  h(Button, { variant: isSaved ? 'secondary' : 'primary', onClick: handleSaveToHistory, disabled: isSaved, icon: Save }, isSaved ? 'Saved to History' : 'Save Report')
+                )
+              ),
+              h(
+                Card,
+                { className: 'result-detail-card', hoverable: false },
+                h('div', { className: 'card-header' }, h('h3', null, 'Sentiment Distribution')),
+                h(
+                  'div',
+                  { className: 'card-body' },
+                  h(
+                    'div',
+                    { className: 'sentiment-bar-chart' },
+                    h(
+                      'div',
+                      { className: 'sentiment-bar-part pos', style: { width: `${result.sentiment.positive}%` }, title: `Positive: ${result.sentiment.positive}%` },
+                      h(Smile, { size: 16 }),
+                      h('span', null, `${result.sentiment.positive}%`)
+                    ),
+                    h(
+                      'div',
+                      { className: 'sentiment-bar-part neu', style: { width: `${result.sentiment.neutral}%` }, title: `Neutral: ${result.sentiment.neutral}%` },
+                      h(Meh, { size: 16 }),
+                      h('span', null, `${result.sentiment.neutral}%`)
+                    ),
+                    h(
+                      'div',
+                      { className: 'sentiment-bar-part neg', style: { width: `${result.sentiment.negative}%` }, title: `Negative: ${result.sentiment.negative}%` },
+                      h(Frown, { size: 16 }),
+                      h('span', null, `${result.sentiment.negative}%`)
+                    )
+                  ),
+                  h(
+                    'div',
+                    { className: 'sentiment-legend' },
+                    h('span', { className: 'legend-item' }, h('span', { className: 'legend-color pos' }), ' Positive Praise'),
+                    h('span', { className: 'legend-item' }, h('span', { className: 'legend-color neu' }), ' Neutral / Feature Inquiries'),
+                    h('span', { className: 'legend-item' }, h('span', { className: 'legend-color neg' }), ' Negative Pain Points')
+                  )
+                )
+              ),
+              h(
+                Card,
+                { className: 'result-detail-card', hoverable: false },
+                h('div', { className: 'card-header' }, h('h3', null, 'Top Customer Pain Points')),
+                h(
+                  'div',
+                  { className: 'card-body pain-points-list' },
+                  result.painPoints.map((point, index) =>
+                    h(
+                      'div',
+                      { key: index, className: 'pain-point-item glass-panel' },
+                      h(
+                        'div',
+                        { className: 'pain-point-header' },
+                        h('span', { className: 'pain-point-badge' }, `Rank ${point.rank}`),
+                        h('h4', { className: 'pain-point-title' }, point.issue),
+                        h('span', { className: `impact-badge impact-${point.impact.toLowerCase()}` }, `${point.impact} Impact`)
+                      ),
+                      h('div', { className: 'pain-point-solution' }, h('strong', null, 'Recommended Fix:'), ' ', point.action)
+                    )
+                  )
+                )
+              ),
+              h(
+                'div',
+                { className: 'feedback-split-grid' },
+                h(
+                  Card,
+                  { className: 'feedback-split-card', hoverable: false },
+                  h('div', { className: 'card-header highlight-praise-header' }, h('h4', null, 'Praise Highlights')),
+                  h('div', { className: 'card-body' }, h('ul', { className: 'feedback-bullet-list' }, result.positivePraise.map((praise, idx) => h('li', { key: idx }, praise))))
+                ),
+                h(
+                  Card,
+                  { className: 'feedback-split-card', hoverable: false },
+                  h('div', { className: 'card-header highlight-features-header' }, h('h4', null, 'Suggested Features')),
+                  h('div', { className: 'card-body' }, h('ul', { className: 'feedback-bullet-list' }, result.suggestedFeatures.map((feat, idx) => h('li', { key: idx }, feat))))
+                )
+              )
+            )
+          : h(
+              Card,
+              { className: 'empty-results-card', hoverable: false },
+              h(
+                'div',
+                { className: 'empty-state-canvas' },
+                h(MessageSquare, { size: 48, className: 'canvas-icon' }),
+                h('h3', null, 'Customer Sentiment Insights'),
+                h('p', null, 'Paste customer reviews directly or upload a CSV on the left panel to map out qualitative trends and extract immediate UX adjustments.')
+              )
+            )
+      )
+    )
+  );
+}
+
+// ---- Feature Canvas view ----
+function FeatureCanvasView() {
+  const { addHistoryItem, loadedHistoryItem, setLoadedHistoryItem } = React.useContext(AppContext);
+
+  const [concept, setConcept] = React.useState('');
+  const [targetPersona, setTargetPersona] = React.useState('');
+
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [result, setResult] = React.useState(null);
+
+  const [expandedStoryId, setExpandedStoryId] = React.useState(null);
+  const [copiedId, setCopiedId] = React.useState(null);
+  const [isCopied, setIsCopied] = React.useState(false);
+  const [isSaved, setIsSaved] = React.useState(false);
+
+  React.useEffect(() => {
+    if (loadedHistoryItem && loadedHistoryItem.type === 'feature') {
+      const { metadata, data } = loadedHistoryItem;
+      if (metadata) {
+        setConcept(metadata.concept || '');
+        setTargetPersona(metadata.targetPersona || '');
+      } else {
+        setConcept(loadedHistoryItem.projectName.replace('... Spec', ''));
+      }
+      setResult(data);
+      setIsSaved(true);
+      setLoadedHistoryItem(null);
+    }
+  }, [loadedHistoryItem, setLoadedHistoryItem]);
+
+  const handleRunRoadmap = async (e) => {
+    e.preventDefault();
+    if (!concept.trim() || !targetPersona.trim()) {
+      setError('Please fill out all fields.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setResult(null);
+    setIsSaved(false);
+    setExpandedStoryId(null);
+    try {
+      const parsedData = await simulateFeatureRoadmap(concept, targetPersona);
+      setResult(parsedData);
+    } catch (err) {
+      setError(err.message || 'An error occurred during backlog generation.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyMarkdown = () => {
+    if (!result) return;
+    let md = `# Feature Roadmap Backlog: ${concept}\n`;
+    md += `**Target Persona:** ${targetPersona}\n\n`;
+    md += `## Backlog Summary\n${result.roadmapSummary}\n\n`;
+    const cols = [
+      { name: 'Must-Have Features', key: 'mustHave' },
+      { name: 'Should-Have Features', key: 'shouldHave' },
+      { name: 'Could-Have Features', key: 'couldHave' }
+    ];
+    cols.forEach((col) => {
+      md += `## ${col.name}\n\n`;
+      result.moscow[col.key].forEach((feat) => {
+        md += `### ${feat.title}\n`;
+        md += `${feat.description}\n`;
+        md += `*User Story: ${feat.userStory}*\n\n`;
+      });
+    });
+    navigator.clipboard.writeText(md);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleDownloadJSON = () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `feature-canvas-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSaveToHistory = () => {
+    if (!result || isSaved) return;
+    addHistoryItem({
+      projectName: `${concept.substring(0, 20)}... Spec`,
+      type: 'feature',
+      metadata: { concept, targetPersona },
+      data: result
+    });
+    setIsSaved(true);
+  };
+
+  const toggleStory = (id) => {
+    setExpandedStoryId(expandedStoryId === id ? null : id);
+  };
+
+  const copyUserStory = (id, storyText) => {
+    navigator.clipboard.writeText(storyText);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const renderKanbanColumn = (title, features, colType) => {
+    return h(
+      'div',
+      { className: `kanban-column col-${colType}` },
+      h('div', { className: 'kanban-column-header' }, h('h4', null, title), h('span', { className: 'column-count' }, (features && features.length) || 0)),
+      h(
+        'div',
+        { className: 'kanban-column-body' },
+        features &&
+          features.map((feat) => {
+            const isExpanded = expandedStoryId === feat.id;
+            const copied = copiedId === feat.id;
+            return h(
+              'div',
+              { key: feat.id, className: 'kanban-card glass-panel' },
+              h('div', { className: 'kanban-card-main' }, h('h5', { className: 'kanban-card-title' }, feat.title), h('p', { className: 'kanban-card-desc' }, feat.description)),
+              h(
+                'div',
+                { className: 'kanban-card-actions' },
+                h(
+                  'button',
+                  { type: 'button', className: `story-toggle-btn ${isExpanded ? 'active' : ''}`, onClick: () => toggleStory(feat.id) },
+                  h('span', null, 'User Story'),
+                  isExpanded ? h(ChevronUp, { size: 14 }) : h(ChevronDown, { size: 14 })
+                )
+              ),
+              isExpanded &&
+                h(
+                  'div',
+                  { className: 'kanban-card-story-drawer' },
+                  h('p', { className: 'story-text' }, `"${feat.userStory}"`),
+                  h(
+                    'button',
+                    { type: 'button', className: 'copy-story-btn', onClick: () => copyUserStory(feat.id, feat.userStory) },
+                    copied
+                      ? [h(ClipboardCheck, { key: 'i', size: 12, className: 'copied-icon' }), h('span', { key: 't' }, 'Copied!')]
+                      : [h(Clipboard, { key: 'i', size: 12 }), h('span', { key: 't' }, 'Copy Story')]
+                  )
+                )
+            );
+          })
+      )
+    );
+  };
+
+  return h(
+    'div',
+    { className: 'feature-container' },
+    h(
+      'div',
+      { className: 'feature-grid' },
+      h(
+        Card,
+        { className: 'setup-panel-card', hoverable: false },
+        h('div', { className: 'card-header' }, h('h3', null, 'Feature Spec Config')),
+        h(
+          'form',
+          { onSubmit: handleRunRoadmap, className: 'card-body setup-form' },
+          h(Input, {
+            label: 'Product Core Concept / Idea',
+            id: 'product-concept',
+            type: 'textarea',
+            placeholder: 'Describe your core product idea, main functions, and what user value it drives…',
+            value: concept,
+            onChange: (e) => setConcept(e.target.value),
+            rows: 6,
+            required: true
+          }),
+          h(Input, {
+            label: 'Target Customer Persona',
+            id: 'target-persona',
+            placeholder: 'e.g. Busy freelance software engineers, eCommerce managers',
+            value: targetPersona,
+            onChange: (e) => setTargetPersona(e.target.value),
+            required: true
+          }),
+          error && h('div', { className: 'error-message-block' }, h(AlertTriangle, { size: 18 }), h('span', null, error)),
+          h(Button, { type: 'submit', loading, className: 'analyze-btn', icon: ArrowRight }, 'Generate Backlog')
+        )
+      ),
+      h(
+        'div',
+        { className: 'results-canvas' },
+        loading
+          ? h(
+              Card,
+              { className: 'loading-results-card', hoverable: false },
+              h('div', { className: 'loading-state-wrapper' }, h(Loader, { type: 'kanban', count: 2 }), h('p', { className: 'loading-hint' }, 'Generating prioritized user stories… this will take a moment.'))
+            )
+          : result
+          ? h(
+              'div',
+              { className: 'results-wrapper' },
+              h(
+                'div',
+                { className: 'actions-floating-bar glass-panel' },
+                h('span', { className: 'results-status' }, 'Roadmap Synced'),
+                h(
+                  'div',
+                  { className: 'actions-button-group' },
+                  h(Button, { variant: 'secondary', onClick: handleCopyMarkdown, icon: Copy }, isCopied ? 'Copied MD!' : 'Copy Markdown'),
+                  h(Button, { variant: 'secondary', onClick: handleDownloadJSON, icon: Download }, 'JSON'),
+                  h(Button, { variant: isSaved ? 'secondary' : 'primary', onClick: handleSaveToHistory, disabled: isSaved, icon: Save }, isSaved ? 'Saved to History' : 'Save Report')
+                )
+              ),
+              h(
+                Card,
+                { className: 'result-detail-card spec-summary-card', hoverable: false },
+                h('div', { className: 'card-header' }, h('h3', null, 'Roadmap Strategy Summary')),
+                h('div', { className: 'card-body' }, h('p', { className: 'summary-paragraph' }, result.roadmapSummary))
+              ),
+              h(
+                'div',
+                { className: 'kanban-board-wrapper' },
+                renderKanbanColumn('Must-Have (MVP Core)', result.moscow && result.moscow.mustHave, 'must'),
+                renderKanbanColumn('Should-Have (Next Core)', result.moscow && result.moscow.shouldHave, 'should'),
+                renderKanbanColumn('Could-Have (Backlog Nice)', result.moscow && result.moscow.couldHave, 'could')
+              )
+            )
+          : h(
+              Card,
+              { className: 'empty-results-card', hoverable: false },
+              h(
+                'div',
+                { className: 'empty-state-canvas' },
+                h(KanbanSquare, { size: 48, className: 'canvas-icon' }),
+                h('h3', null, 'Product Backlog Canvas'),
+                h('p', null, 'Provide your product outline and customer persona on the left, then click "Generate" to map out user story specs on a MoSCoW board.')
+              )
+            )
+      )
+    )
+  );
+}
+
+// ---- App root ----
+function App() {
+  const { currentView, activeProvider, activeModel, isConnected } = React.useContext(AppContext);
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'settings':
+        return h(SettingsView);
+      case 'dashboard':
+        return h(DashboardView);
+      case 'competitor':
+        return h(CompetitorView);
+      case 'review':
+        return h(ReviewAnalyzerView);
+      case 'feature':
+        return h(FeatureCanvasView);
+      default:
+        return h(SettingsView);
+    }
+  };
+
+  return h(
+    'div',
+    { className: 'app-layout' },
+    h(Navigation),
+    h(
+      'div',
+      { className: 'app-main-content' },
+      h(
+        'header',
+        { className: 'app-header' },
+        h(
+          'div',
+          { className: 'header-breadcrumbs' },
+          h('span', { className: 'breadcrumb-parent' }, 'Synthesize'),
+          h('span', { className: 'breadcrumb-separator' }, '/'),
+          h('span', { className: 'breadcrumb-current' }, currentView.charAt(0).toUpperCase() + currentView.slice(1))
+        ),
+        h(StatusIndicator, { provider: activeProvider, model: activeModel, isConnected })
+      ),
+      h('main', { className: 'app-view-container' }, h(
+        'div',
+        { className: 'demo-banner' },
+        h(ShieldAlert, { size: 16 }),
+        h('span', null, 'Simulated AI engine — all analysis below is generated locally in your browser, not by a real LLM. No API keys, network calls, or backend required.')
+      ), renderView())
+    )
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  h(
+    React.StrictMode,
+    null,
+    h(AppProvider, null, h(App))
+  )
+);
+</script>
+</body>
+</html>
