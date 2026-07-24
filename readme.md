@@ -20,24 +20,15 @@ A modern, client-side product research application that helps users analyze comp
 
 ## Features
 
-
-
 - 📊 Interactive Dashboard with quick-launch tools
-
 - 🏆 Competitor Matrix with benchmarking and SWOT analysis
-
 - 💬 Review Analyzer with sentiment insights and feature requests
-
 - 📋 Feature Canvas using MoSCoW prioritization
-
+- 🔑 BYOAI (Bring Your Own AI) settings interface for future API integration
 - 💾 Local history using browser localStorage
-
 - 📤 Export reports as Markdown or JSON
-
 - 📱 Responsive modern interface
-
 - ⚡ Runs entirely in the browser
-
 
 
 ---
@@ -176,14 +167,10 @@ ai-product-research-tool/
 
 ## Notes
 
-
-
 - This is a frontend portfolio demonstration.
-
 - AI-generated outputs are simulated locally.
-
-- No external AI services or API keys are used.
-
+- Includes a **BYOAI (Bring Your Own AI)** configuration interface designed for future integration with providers such as OpenAI or Google Gemini.
+- No external AI services or API keys are currently required.
 - User data is stored locally using browser localStorage.
 
 
@@ -191,21 +178,13 @@ ai-product-research-tool/
 ---
 
 
-
 ## Future Improvements
 
-
-
-- Real OpenAI/Gemini API integration
-
+- Connect the BYOAI interface to real AI providers (OpenAI, Google Gemini, Anthropic, etc.)
 - Advanced CSV parsing
-
 - Authentication
-
 - Cloud storage
-
 - Team collaboration
-
 - PDF report export
 
 
